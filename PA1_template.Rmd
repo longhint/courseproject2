@@ -1,0 +1,66 @@
+---
+title: "PA1_template.Rmd"
+output: html_document
+---
+
+```{r}
+
+library(dplyr)
+library(ggplot2)
+
+#Read and formatting data
+data_set <- read.csv("activity.csv") 
+data_set$date <- as.Date( data_set$date, format = "%Y-%m-%d")
+
+#What is mean total number of steps taken per day?
+aggregate(data_set$steps,by = list(data_set$date), FUN= sum)%>% na.omit() -> stepsum
+ggplot(stepsum, aes(x= stepsum$x)) + geom_histogram(binwidth = 3000, fill = "green", col = "black")+theme_bw()+ labs(title = "Total number of steps", x = "Total step") 
+
+print(c("Mean:" ,as.integer(mean(stepsum$x, na.rm = TRUE))))
+print(c("Median:" ,as.integer(median(stepsum$x, na.rm = TRUE))))
+```
+
+
+```{r}
+#What is the average daily activity pattern?
+
+
+
+group_by(data_set, interval)%>% summarise_at(vars(steps), funs(mean(., na.rm = TRUE)))%>%
+ggplot()+ geom_line(aes (x= interval, y= steps))+ theme_bw() +labs(title = "Daily activity pattern", x = "Time interval", y= "average step") 
+
+group_by(data_set, interval)%>% summarise_at(vars(steps), funs(mean(., na.rm = TRUE)))-> q2
+print (c("Maximum number of steps at ", q2[q2$steps == max(q2[,2]), 1]))
+
+
+```
+```{r}
+#Imputting missing values 
+print(c("total number of rows with NA", sum(is.na(data_set$steps))))
+
+left_join(q2, data_set[ is.na(data_set$steps), c(2,3)], by = "interval" ) -> sub
+data_set-> new_data_set
+cbind(sub[,2:3], sub[,1]) -> new_data_set[ is.na(new_data_set$steps),]
+
+aggregate(new_data_set$steps,by = list(new_data_set$date), FUN= sum) -> stepsum
+ggplot(stepsum, aes(x= stepsum$x)) + geom_histogram(binwidth = 3000, fill = "green", col = "black")+theme_bw()+ labs(title = "Total number of steps", x = "Total step") 
+
+print(c("Mean:" ,as.integer(mean(stepsum$x, na.rm = TRUE))))
+print(c("Median:" ,as.integer(median(stepsum$x, na.rm = TRUE))))
+
+
+ 
+```
+```{r}
+#Are there differences in activity patterns between weekdays and weekends?
+new_data_set$DateCat<- ifelse(weekdays(new_data_set$date) %in% c("Saturday","Sunday"), "weekend", "weekdays")
+
+group_by(new_data_set, DateCat, interval)%>% summarise_at(vars(steps), funs(mean(., na.rm = TRUE)))%>%
+ggplot()+ geom_line(aes (x= interval, y= steps))+ theme_bw() +labs(title = "Daily activity pattern", x = "Time interval", y= "average step") + facet_grid(DateCat ~.)
+
+
+```
+
+
+
+
